@@ -2,7 +2,7 @@
 
 import firebase from 'firebase';
 import async from 'async';
-import { newStruct, Map, DatabaseSpec, Dataset } from '@attic/noms';
+import { newStruct, Map, DatasetSpec, Dataset } from '@attic/noms';
 
 main().catch(ex => {
   console.error('\nError:', ex);
@@ -28,7 +28,7 @@ iter[Symbol.iterator] = function () {
   };
 };
 
-var all = new Map();
+var all = Promise.resolve(new Map());
 
 function newItem(v) {
   console.log(v['id']);
@@ -37,7 +37,9 @@ function newItem(v) {
   delete v['kids']; // XXX Ignore the array for now.
   const n = newStruct(t, v);
 
-  all.set(v['id'], n).then(a => all = a);
+  all = all.then(a => {
+    return a.set(v['id'], n);
+  });
 }
 
 async function main(): Promise<void> {
@@ -84,20 +86,33 @@ async function main(): Promise<void> {
 
   process();
 
-  const spec = DatabaseSpec.parse('http://localhost:8000');
-  const db = spec.database();
-  let ds = new Dataset(db, 'hn');
+  const spec = DatasetSpec.parse('http://localhost:8000::hn');
+  let ds = spec.dataset();
 
   let last = null;
 
-  setInterval(() => {
-    if (last !== all) {
-      ds.commit(all).then(ret => ds = ret).catch(ex => {
+  const maybeCommit = async () => {
+    console.log('checking whether commit necessary...')
+    let a = await all;
+    if (last !== a) {
+      console.log('...yup')
+      try {
+        ds = await ds.commit(a);
+      } catch (ex) {
         process.exitCode = 1;
         console.log(ex);
         done = true;
-      });
+      }
       last = all;
+    } else {
+      console.log('...nawp')
     }
-  }, 1000 * 1);
+    scheduleCommit();
+  }
+
+  const scheduleCommit = () => {
+    setTimeout(maybeCommit, 1 * 1000);
+  };
+
+  scheduleCommit();
 }

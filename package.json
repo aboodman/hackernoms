@@ -2,9 +2,9 @@
   "name": "hn",
   "license": "Apache-2.0",
   "version": "0.0.1",
-  "main": "disc/main.js",
+  "main": "dist/main.js",
   "dependencies": {
-    "@attic/noms": "file:/Users/ahl/src/noms/js",
+    "@attic/noms": "file:/Users/aa/src/github.com/attic-labs/noms/js",
     "babel-cli": "^6.10.1",
     "babel-core": "^6.10.4",
     "babel-generator": "^6.11.0",
